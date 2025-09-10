@@ -156,7 +156,7 @@ class ScheduleController extends Controller
 
                         // Overlap validation: only when screen and both dates are present
                         if (!empty($mediaScreenIds[$i]) && $startAt !== null && $endAt !== null) {
-                            if ($this->screenHasOverlap($mediaScreenIds[$i], $startAt, $endAt, null)) {
+                            if ($this->screenHasOverlap($mediaScreenIds[$i], $startAt, $endAt, null, $schedule->id)) {
                                 DB::rollBack();
                                 return response()->json([
                                     'success' => false,
@@ -372,7 +372,7 @@ class ScheduleController extends Controller
                         // Overlap validation: only when screen and both dates are present
                         if (!empty($mediaScreenIds[$i]) && $startAt !== null && $endAt !== null) {
                             $excludeId = !empty($mediaIds[$i]) ? $mediaIds[$i] : null;
-                            if ($this->screenHasOverlap($mediaScreenIds[$i], $startAt, $endAt, $excludeId)) {
+                            if ($this->screenHasOverlap($mediaScreenIds[$i], $startAt, $endAt, $excludeId, $schedule->id)) {
                                 DB::rollBack();
                                 return response()->json([
                                     'success' => false,
@@ -447,7 +447,7 @@ class ScheduleController extends Controller
 
                                 // Overlap validation: only when screen and both dates are present
                                 if (!empty($updateData['screen_id']) && !empty($updateData['schedule_start_date_time']) && !empty($updateData['schedule_end_date_time'])) {
-                                    if ($this->screenHasOverlap($updateData['screen_id'], $updateData['schedule_start_date_time'], $updateData['schedule_end_date_time'], $media->id)) {
+                                    if ($this->screenHasOverlap($updateData['screen_id'], $updateData['schedule_start_date_time'], $updateData['schedule_end_date_time'], $media->id, $schedule->id)) {
                                         DB::rollBack();
                                         return response()->json([
                                             'success' => false,
@@ -1118,7 +1118,7 @@ class ScheduleController extends Controller
 
                             // Overlap validation: only when screen and both dates are present
                             if (!empty($updateData['screen_id']) && !empty($updateData['schedule_start_date_time']) && !empty($updateData['schedule_end_date_time'])) {
-                                if ($this->screenHasOverlap($updateData['screen_id'], $updateData['schedule_start_date_time'], $updateData['schedule_end_date_time'], $media->id)) {
+                                if ($this->screenHasOverlap($updateData['screen_id'], $updateData['schedule_start_date_time'], $updateData['schedule_end_date_time'], $media->id, $schedule->id)) {
                                     DB::rollBack();
                                     return response()->json([
                                         'success' => false,
@@ -1167,7 +1167,7 @@ class ScheduleController extends Controller
 
                         // Overlap validation: only when screen and both dates are present
                         if (!empty($createData['screen_id']) && !empty($createData['schedule_start_date_time']) && !empty($createData['schedule_end_date_time'])) {
-                            if ($this->screenHasOverlap($createData['screen_id'], $createData['schedule_start_date_time'], $createData['schedule_end_date_time'], null)) {
+                            if ($this->screenHasOverlap($createData['screen_id'], $createData['schedule_start_date_time'], $createData['schedule_end_date_time'], null, $schedule->id)) {
                                 DB::rollBack();
                                 return response()->json([
                                     'success' => false,
@@ -1296,7 +1296,7 @@ class ScheduleController extends Controller
 
                     // Overlap validation: only when screen and both dates are present
                     if (!empty($createData['screen_id']) && !empty($createData['schedule_start_date_time']) && !empty($createData['schedule_end_date_time'])) {
-                        if ($this->screenHasOverlap($createData['screen_id'], $createData['schedule_start_date_time'], $createData['schedule_end_date_time'], null)) {
+                        if ($this->screenHasOverlap($createData['screen_id'], $createData['schedule_start_date_time'], $createData['schedule_end_date_time'], null, $schedule->id)) {
                             DB::rollBack();
                             return response()->json([
                                 'success' => false,
@@ -1340,7 +1340,7 @@ class ScheduleController extends Controller
     /**
      * Check if a given time range overlaps existing media for the same screen.
      */
-    private function screenHasOverlap($screenId, $startAt, $endAt, $excludeMediaId = null): bool
+    private function screenHasOverlap($screenId, $startAt, $endAt, $excludeMediaId = null, $excludeScheduleId = null): bool
     {
         if (empty($screenId) || empty($startAt) || empty($endAt)) {
             return false;
@@ -1350,6 +1350,10 @@ class ScheduleController extends Controller
 
         if (!empty($excludeMediaId)) {
             $query->where('id', '!=', $excludeMediaId);
+        }
+
+        if (!empty($excludeScheduleId)) {
+            $query->where('schedule_id', '!=', $excludeScheduleId);
         }
 
         $query->where(function ($q) use ($startAt, $endAt) {
