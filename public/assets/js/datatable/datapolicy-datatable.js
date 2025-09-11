@@ -1209,225 +1209,32 @@ $(document).ready(function () {
             }
         });
 
-        // Handle edit schedule form submission with optimized upload
+        // Handle edit schedule form submission
         $('#edit-schedule-form').on('submit', function (e) {
             e.preventDefault();
-            console.log('Edit form submission started');
-
             var submitBtn = $(this).find('button[type="submit"]');
             var originalBtnText = submitBtn.html();
             submitBtn.html('Updating...').prop('disabled', true);
+
+            // Use FormData for file uploads
+            var formData = new FormData(this);
 
             // Show progress bar
             $('#edit-upload-progress-container').show();
             $('#edit-form-alert').hide();
             updateEditProgressBar(0, 'Preparing upload...');
 
-            // Check for large video files and use chunked upload
-            var hasLargeFiles = false;
-            var mediaFiles = [];
-            $('input[name="edit_media_file[]"]').each(function (index) {
-                if (this.files[0]) {
-                    var file = this.files[0];
-                    console.log('Edit File ' + index + ':', file.name, 'Size:', file.size, 'bytes', 'Type:', file.type);
-
-                    if (file.size > 2 * 1024 * 1024 * 1024) { // 2GB limit
-                        alert('File ' + file.name + ' is too large. Maximum size is 2GB.');
-                        submitBtn.html(originalBtnText).prop('disabled', false);
-                        return false;
-                    }
-
-                    if (file.size > 50 * 1024 * 1024 && file.type.startsWith('video/')) { // 50MB for videos
-                        hasLargeFiles = true;
-                    }
-
-                    mediaFiles.push({
-                        file: file,
-                        index: index,
-                        title: $('input[name="edit_media_title[]"]').eq(index).val(),
-                        type: $('select[name="edit_media_type[]"]').eq(index).val(),
-                        screenId: $('select[name="edit_media_screen_id[]"]').eq(index).val(),
-                        duration: $('input[name="edit_media_duration_seconds[]"]').eq(index).val(),
-                        startDate: $('input[name="edit_media_start_date_time[]"]').eq(index).val(),
-                        endDate: $('input[name="edit_media_end_date_time[]"]').eq(index).val(),
-                        playForever: $('input[name="edit_media_play_forever[]"]').eq(index).is(':checked'),
-                        mediaId: $('input[name="edit_media_id[]"]').eq(index).val()
-                    });
-                }
-            });
-
-            if (hasLargeFiles) {
-                // Use chunked upload for large files
-                uploadEditWithChunkedUpload(this, mediaFiles, submitBtn, originalBtnText);
-            } else {
-                // Use regular upload for smaller files
-                uploadEditWithRegularMethod(this, submitBtn, originalBtnText);
+            // Debug: Log form data
+            console.log('Edit form data:');
+            for (var pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
             }
-        });
-
-        // Chunked upload function for large files in edit form
-        async function uploadEditWithChunkedUpload(form, mediaFiles, submitBtn, originalBtnText) {
-            try {
-                updateEditProgressBar(0, 'Initializing chunked upload...');
-
-                const uploadPromises = [];
-                const uploadedFiles = [];
-
-                for (let i = 0; i < mediaFiles.length; i++) {
-                    const mediaFile = mediaFiles[i];
-                    const file = mediaFile.file;
-
-                    if (file.size > 50 * 1024 * 1024 && file.type.startsWith('video/')) {
-                        // Use chunked upload for large video files
-                        const uploader = new ChunkedUploader({
-                            chunkSize: 2 * 1024 * 1024, // 2MB chunks
-                            maxConcurrentChunks: 3,
-                            onProgress: (progress) => {
-                                const totalProgress = ((i / mediaFiles.length) * 100) + ((progress.percentage / mediaFiles.length));
-                                updateEditProgressBar(Math.round(totalProgress), `Uploading ${file.name}... (${progress.percentage}%)`);
-                            },
-                            onError: (error) => {
-                                throw new Error(`Failed to upload ${file.name}: ${error.message}`);
-                            }
-                        });
-
-                        const promise = uploader.uploadFile(file, '/schedule/chunked-upload').then(result => {
-                            console.log('Edit chunked upload completed for:', file.name, result);
-                            return {
-                                ...mediaFile,
-                                file_path: result.file_path,
-                                file_name: result.file_name
-                            };
-                        });
-                        uploadPromises.push(promise);
-                    } else {
-                        // Use single upload for smaller files
-                        const formData = new FormData();
-                        formData.append('file', file);
-                        formData.append('single_upload', 'true');
-
-                        const promise = fetch('/schedule/chunked-upload', {
-                            method: 'POST',
-                            headers: {
-                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                            },
-                            body: formData
-                        }).then(async response => {
-                            if (!response.ok) {
-                                throw new Error(`Failed to upload ${file.name}`);
-                            }
-
-                            const result = await response.json();
-                            console.log('Edit single upload completed for:', file.name, result);
-                            return {
-                                ...mediaFile,
-                                file_path: result.file_path,
-                                file_name: result.file_name
-                            };
-                        });
-
-                        uploadPromises.push(promise);
-                    }
-                }
-
-                // Wait for all uploads to complete
-                console.log('Edit: Waiting for', uploadPromises.length, 'upload promises to complete...');
-                const uploadResults = await Promise.all(uploadPromises);
-                console.log('Edit: All uploads completed. Upload results:', uploadResults);
-
-                // Add the upload results to uploadedFiles
-                uploadedFiles.push(...uploadResults);
-
-                updateEditProgressBar(90, 'Updating schedule...');
-
-                // Now update the schedule with uploaded file paths
-                const scheduleData = {
-                    _method: 'PUT',
-                    schedule_name: $('input[name="schedule_name"]').val(),
-                    device_id: $('select[name="device_id"]').val(),
-                    layout_id: $('select[name="layout_id"]').val(),
-                    schedule_start_date_time: $('input[name="schedule_start_date_time"]').val(),
-                    schedule_end_date_time: $('input[name="schedule_end_date_time"]').val(),
-                    play_forever: $('input[name="play_forever"]').is(':checked'),
-                    medias: uploadedFiles.map(media => ({
-                        id: media.mediaId,
-                        title: media.title,
-                        media_type: media.type,
-                        screen_id: media.screenId,
-                        duration_seconds: media.duration,
-                        start_date_time: media.startDate,
-                        end_date_time: media.endDate,
-                        play_forever: media.playForever,
-                        media_file: media.file_path
-                    }))
-                };
-
-                console.log('Sending edit schedule data:', scheduleData);
-
-                const response = await fetch($(form).attr('action'), {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-                    },
-                    body: JSON.stringify(scheduleData)
-                });
-
-                console.log('Edit response status:', response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Edit response error:', errorText);
-                    throw new Error(`HTTP ${response.status}: ${errorText}`);
-                }
-
-                const result = await response.json();
-                console.log('Edit response result:', result);
-
-                updateEditProgressBar(100, 'Complete!');
-
-                if (result.success) {
-                    var $wrap = $('#edit-form-alert');
-                    var $alert = $wrap.find('.alert');
-                    if ($alert.length === 0) {
-                        $wrap.html('<div class="alert alert-success alert-dismissible fade show" role="alert"></div>');
-                        $alert = $wrap.find('.alert');
-                    }
-                    $alert.removeClass('alert-danger').addClass('alert-success');
-                    $alert.html('Schedule updated successfully! <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
-                    $wrap.show();
-                    scheduleTable.ajax.reload();
-                    setTimeout(function () { $('#offcanvas_edit').offcanvas('hide'); }, 1200);
-                } else {
-                    throw new Error(result.message || 'Failed to update schedule');
-                }
-
-            } catch (error) {
-                console.error('Edit chunked upload error:', error);
-                // Inline alert for edit form
-                var $wrap = $('#edit-form-alert');
-                var $alert = $wrap.find('.alert');
-                if ($alert.length === 0) { $wrap.html('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>'); $alert = $wrap.find('.alert'); }
-                $alert.removeClass('alert-success').addClass('alert-danger');
-                $alert.html('Upload failed: ' + error.message + ' <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
-                $wrap.show();
-            } finally {
-                $('#edit-upload-progress-container').hide();
-                submitBtn.html(originalBtnText).prop('disabled', false);
-            }
-        }
-
-        // Regular upload function for smaller files in edit form
-        function uploadEditWithRegularMethod(form, submitBtn, originalBtnText) {
-            // Use FormData for file uploads
-            const formData = new FormData(form);
-            formData.append('_method', 'PUT');
-            const actionUrl = $(form).attr('action');
 
             $.ajax({
-                url: actionUrl,
+                url: $(this).attr('action'),
                 type: 'POST',
                 data: formData,
+                dataType: 'json',
                 processData: false,
                 contentType: false,
                 headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
@@ -1449,38 +1256,36 @@ $(document).ready(function () {
                     if (response.success) {
                         var $wrap = $('#edit-form-alert');
                         var $alert = $wrap.find('.alert');
-                        if ($alert.length === 0) { $wrap.html('<div class="alert alert-success alert-dismissible fade show" role="alert"></div>'); $alert = $wrap.find('.alert'); }
+                        if ($alert.length === 0) {
+                            $wrap.html('<div class="alert alert-success alert-dismissible fade show" role="alert"></div>');
+                            $alert = $wrap.find('.alert');
+                        }
                         $alert.removeClass('alert-danger').addClass('alert-success');
                         $alert.html('Schedule updated successfully! <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
                         $wrap.show();
                         scheduleTable.ajax.reload();
                         setTimeout(function () { $('#offcanvas_edit').offcanvas('hide'); }, 1200);
                     } else {
-                        // Toast fallback
                         showToast('Update Failed', response.message || 'Failed to update schedule', 'danger');
                     }
                 },
                 error: function (xhr) {
+                    console.error('Schedule update error:', xhr);
                     // Hide progress bar
                     $('#edit-upload-progress-container').hide();
 
                     const res = xhr.responseJSON;
-                    let msg = 'Failed to update schedule.';
-                    if (res && res.errors) { msg = Object.values(res.errors)[0][0]; }
-                    else if (res && res.message) { msg = res.message; }
-
-                    var $wrap = $('#edit-form-alert');
-                    var $alert = $wrap.find('.alert');
-                    if ($alert.length === 0) { $wrap.html('<div class="alert alert-danger alert-dismissible fade show" role="alert"></div>'); $alert = $wrap.find('.alert'); }
-                    $alert.removeClass('alert-success').addClass('alert-danger');
-                    $alert.html(msg + ' <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>');
-                    $wrap.show();
+                    let msg = 'Error updating schedule.';
+                    if (res && res.errors) {
+                        msg = Object.values(res.errors)[0][0];
+                    } else if (res && res.message) {
+                        msg = res.message;
+                    }
+                    showToast('Validation Error', msg, 'danger');
                 },
-                complete: function () {
-                    submitBtn.html(originalBtnText).prop('disabled', false);
-                }
+                complete: function () { submitBtn.html(originalBtnText).prop('disabled', false); }
             });
-        }
+        });
 
         // Handle add media functionality for create form
         $(document).on('click', '#add-media', function () {
