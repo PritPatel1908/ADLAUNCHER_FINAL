@@ -56,7 +56,7 @@ class ScheduleController extends Controller
                 'schedule_end_date_time' => 'nullable|date',
                 'media_title.*' => 'nullable|string|max:255',
                 'media_type.*' => 'nullable|string|in:image,video,audio,mp4,png,jpg,pdf',
-                'media_file.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,mp3,wav,pdf|max:204800', // 200MB limit
+                'media_file.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,mp3,wav,pdf|max:2048000', // 200MB limit
                 'media_screen_id.*' => 'nullable|exists:device_screens,id',
                 'media_duration_seconds.*' => 'nullable|integer|min:1|max:86400',
                 'media_start_date_time.*' => 'nullable|date',
@@ -276,16 +276,16 @@ class ScheduleController extends Controller
         }
 
         $request->validate([
-            'schedule_name' => 'required|string|max:255',
-            'device_id' => 'required|exists:devices,id',
-            'layout_id' => 'nullable|exists:device_layouts,id',
+            'schedule_name' => 'sometimes|required|string|max:255',
+            'device_id' => 'sometimes|required|exists:devices,id',
+            'layout_id' => 'sometimes|nullable|exists:device_layouts,id',
             'schedule_start_date_time' => 'nullable|date',
             'schedule_end_date_time' => 'nullable|date',
             'edit_media_title.*' => 'nullable|string|max:255',
             'edit_media_type.*' => 'nullable|string|in:image,video,audio,mp4,png,jpg,pdf',
-            'edit_media_file.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,mp3,wav,pdf|max:204800', // 200MB limit
+            'edit_media_file.*' => 'nullable|file|mimes:jpg,jpeg,png,gif,mp4,avi,mov,mp3,wav,pdf|max:2048000', // 200MB limit
             'edit_media_screen_id.*' => 'nullable|exists:device_screens,id',
-            'edit_media_duration_seconds.*' => 'nullable|integer|min:1|max:86400',
+            'edit_media_duration_seconds.*' => 'nullable|integer|min:1|max:2048000',
             'edit_media_start_date_time.*' => 'nullable|date',
             'edit_media_end_date_time.*' => 'nullable|date',
             'edit_media_play_forever.*' => 'nullable|boolean',
@@ -295,9 +295,9 @@ class ScheduleController extends Controller
             DB::beginTransaction();
 
             $schedule->update([
-                'schedule_name' => $request->schedule_name,
-                'device_id' => $request->device_id,
-                'layout_id' => $request->layout_id,
+                'schedule_name' => $request->schedule_name ?? $schedule->schedule_name,
+                'device_id' => $request->device_id ?? $schedule->device_id,
+                'layout_id' => $request->layout_id ?? $schedule->layout_id,
             ]);
 
             // Parse schedule-level defaults
@@ -972,10 +972,10 @@ class ScheduleController extends Controller
         }
 
         // Validate file size (max 200MB for single upload)
-        if ($file->getSize() > 200 * 1024 * 1024) {
+        if ($file->getSize() > 200 * 1024 * 1024 * 1024) {
             return response()->json([
                 'success' => false,
-                'message' => 'File too large for single upload. Use chunked upload for files larger than 200MB.'
+                'message' => 'File too large for single upload. Use chunked upload for files larger than 2GB.'
             ], 400);
         }
 
@@ -1044,9 +1044,9 @@ class ScheduleController extends Controller
 
             // Validate the JSON data
             $validator = Validator::make($data, [
-                'schedule_name' => 'required|string|max:255',
-                'device_id' => 'required|exists:devices,id',
-                'layout_id' => 'nullable|exists:device_layouts,id',
+                'schedule_name' => 'sometimes|required|string|max:255',
+                'device_id' => 'sometimes|required|exists:devices,id',
+                'layout_id' => 'sometimes|nullable|exists:device_layouts,id',
                 'schedule_start_date_time' => 'nullable|date',
                 'schedule_end_date_time' => 'nullable|date',
                 'play_forever' => 'nullable|boolean',
