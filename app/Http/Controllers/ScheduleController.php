@@ -1051,7 +1051,7 @@ class ScheduleController extends Controller
                 'schedule_end_date_time' => 'nullable|date',
                 'play_forever' => 'nullable|boolean',
                 'medias' => 'nullable|array',
-                'medias.*.id' => 'nullable|exists:schedule_media,id',
+                'medias.*.id' => 'nullable|exists:schedule_medias,id',
                 'medias.*.title' => 'nullable|string|max:255',
                 'medias.*.media_type' => 'nullable|string|in:image,video,audio,mp4,png,jpg,pdf',
                 'medias.*.screen_id' => 'nullable|exists:device_screens,id',

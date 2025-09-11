@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Database\Migrations\Migration;
 
 return new class extends Migration
 {
@@ -15,7 +15,9 @@ return new class extends Migration
             $table->id();
             $table->string('policy_name');
             $table->boolean('self_only')->default(false);
-            $table->json('models')->nullable();
+            $table->boolean('allow_all_location')->default(false);
+            $table->boolean('allow_all_company')->default(false);
+            $table->boolean('allow_all_area')->default(false);
             $table->foreignId('created_by')->nullable()->constrained('users');
             $table->foreignId('updated_by')->nullable()->constrained('users');
             $table->timestamps();

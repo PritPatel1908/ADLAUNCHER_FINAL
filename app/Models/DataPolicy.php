@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class DataPolicy extends Model
@@ -14,14 +14,18 @@ class DataPolicy extends Model
     protected $fillable = [
         'policy_name',
         'self_only',
-        'models',
+        'allow_all_location',
+        'allow_all_company',
+        'allow_all_area',
         'created_by',
         'updated_by',
     ];
 
     protected $casts = [
         'self_only' => 'boolean',
-        'models' => 'array',
+        'allow_all_location' => 'boolean',
+        'allow_all_company' => 'boolean',
+        'allow_all_area' => 'boolean',
     ];
 
     public function createdBy(): BelongsTo
