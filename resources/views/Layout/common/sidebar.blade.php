@@ -9,8 +9,12 @@
             </a>
 
             <!-- Logo Small -->
-            <a href="{{ route('dashboard') }}" class="logo-small">
+            {{-- <a href="{{ route('dashboard') }}" class="logo-small">
                 <img src="{{ asset('assets/img/logo-small.svg') }}" alt="Logo">
+            </a> --}}
+
+            <a href="{{ route('dashboard') }}" class="logo-small">
+                A{{-- <img src="{{ asset('assets/img/logo-small.svg') }}" alt="Logo"> --}}
             </a>
 
             <!-- Logo Dark -->

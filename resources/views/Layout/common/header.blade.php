@@ -27,7 +27,7 @@
             </button>
 
             <!-- Search -->
-            <div class="me-auto d-flex align-items-center header-search d-lg-flex d-none">
+            {{-- <div class="me-auto d-flex align-items-center header-search d-lg-flex d-none">
                 <!-- Search -->
                 <div class="input-icon position-relative me-2">
                     <input type="text" class="form-control border-0 shadow-sm" placeholder="Search Keyword"
@@ -36,7 +36,7 @@
                         style="right: 12px; color: #6c757d;"><i class="ti ti-search"></i></span>
                 </div>
                 <!-- /Search -->
-            </div>
+            </div> --}}
 
         </div>
 
@@ -60,13 +60,13 @@
             <!-- Minimize -->
 
             <!-- Light/Dark Mode Button -->
-            <div class="header-item d-none d-sm-flex me-2">
+            {{-- <div class="header-item d-none d-sm-flex me-2">
                 <button class="topbar-link btn topbar-link" id="light-dark-mode" type="button">
                     <i class="ti ti-moon fs-16"></i>
                 </button>
-            </div>
+            </div> --}}
 
-            <!-- pages -->
+            {{-- <!-- pages -->
             <div class="header-item d-none d-sm-flex">
                 <div class="dropdown me-2">
                     <a href="javascript:void(0);" class="btn topbar-link topbar-teal-link" data-bs-toggle="dropdown">
@@ -317,65 +317,42 @@
 
                     </div>
                 </div>
-            </div>
+            </div> --}}
 
             <!-- User Dropdown -->
             <div class="dropdown profile-dropdown d-flex align-items-center justify-content-center">
                 <a href="javascript:void(0);" class="topbar-link dropdown-toggle drop-arrow-none position-relative"
                     data-bs-toggle="dropdown" data-bs-offset="0,22" aria-haspopup="false" aria-expanded="false">
-                    <img src="{{ asset('assets/img/users/user-40.jpg') }}" width="38" class="rounded-1 d-flex"
-                        alt="user-image">
+                    @php
+                        $authUser = auth()->user();
+                        $displayName = trim($authUser->full_name ?? ($authUser->name ?? ''));
+                        $nameParts = preg_split('/\s+/', $displayName);
+                        $initials = '';
+                        if (is_array($nameParts) && count($nameParts) > 0 && $nameParts[0] !== '') {
+                            $initials .= mb_strtoupper(mb_substr($nameParts[0], 0, 1));
+                        }
+                        if (is_array($nameParts) && count($nameParts) > 1 && $nameParts[1] !== '') {
+                            $initials .= mb_strtoupper(mb_substr($nameParts[1], 0, 1));
+                        }
+                        if ($initials === '' && $displayName !== '') {
+                            $initials = mb_strtoupper(mb_substr($displayName, 0, 1));
+                        }
+                    @endphp
+                    <div class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white fw-bold"
+                        style="width: 38px; height: 38px;">{{ $initials }}</div>
                     <span class="online text-success"><i
                             class="ti ti-circle-filled d-flex bg-white rounded-circle border border-1 border-white"></i></span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-2">
 
-                    <div class="d-flex align-items-center bg-light rounded-3 p-2 mb-2">
-                        <img src="{{ asset('assets/img/users/user-40.jpg') }}" class="rounded-circle" width="42"
-                            height="42" alt="Img">
-                        <div class="ms-2">
-                            <p class="fw-medium text-dark mb-0">Katherine Brooks</p>
-                            <span class="d-block fs-13">Installer</span>
-                        </div>
-                    </div>
-
-                    <!-- Item-->
-                    <a href="{{ route('dashboard') }}" class="dropdown-item">
-                        <i class="ti ti-user-circle me-1 align-middle"></i>
-                        <span class="align-middle">Profile Settings</span>
-                    </a>
-
-                    <!-- item -->
-                    <div
-                        class="form-check form-switch form-check-reverse d-flex align-items-center justify-content-between dropdown-item mb-0">
-                        <label class="form-check-label" for="notify"><i
-                                class="ti ti-bell"></i>Notifications</label>
-                        <input class="form-check-input me-0" type="checkbox" role="switch" id="notify">
-                    </div>
-
-                    <!-- Item-->
-                    <a href="javascript:void(0);" class="dropdown-item">
-                        <i class="ti ti-help-circle me-1 align-middle"></i>
-                        <span class="align-middle">Help & Support</span>
-                    </a>
-
-                    <!-- Item-->
-                    <a href="{{ route('dashboard') }}" class="dropdown-item">
-                        <i class="ti ti-settings me-1 align-middle"></i>
-                        <span class="align-middle">Settings</span>
-                    </a>
-
-                    <!-- Item-->
-                    <div class="pt-2 mt-2 border-top">
-                        <form id="logout-form" action="{{ route('logout') }}" method="POST"
-                            style="display: none;">
+                    <div class="pt-2">
+                        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
                             @csrf
                         </form>
-                        <a onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-                            class="dropdown-item text-danger">
+                        <button type="submit" form="logout-form" class="dropdown-item text-danger">
                             <i class="ti ti-logout me-1 fs-17 align-middle"></i>
                             <span class="align-middle">Sign Out</span>
-                        </a>
+                        </button>
                     </div>
                 </div>
             </div>

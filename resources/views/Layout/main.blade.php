@@ -108,8 +108,7 @@
 
     <!-- Apexchart JS -->
     <script src="{{ asset('assets/plugins/apexchart/apexcharts.min.js') }}" type="text/javascript"></script>
-    <script src="{{ asset('assets/plugins/apexchart/chart-data.js') }}" type="text/javascript"></script>
-    <script src="{{ asset('assets/json/deals-project.js') }}" type="text/javascript"></script>
+    {{-- Removed dummy chart/table data includes. Real data is injected from controller. --}}
 
     <!-- Mobile JS -->
 

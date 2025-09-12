@@ -10,6 +10,7 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\DeviceApiController;
 use App\Http\Controllers\ShowColumnController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DeviceLayoutController;
 use App\Http\Controllers\DeviceScreenController;
 use App\Http\Controllers\ScheduleMediaController;
@@ -73,9 +74,9 @@ Route::post('register', [AuthController::class, 'register'])->name('register.sub
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 // Dashboard Route
-Route::get('', function () {
-    return view('Dashboard.index');
-})->name('dashboard')->middleware('auth');
+Route::get('', [DashboardController::class, 'index'])
+    ->name('dashboard')
+    ->middleware('auth');
 
 // Location Routes with individual permissions
 Route::get('location', [LocationController::class, 'index'])->name('location.index')->middleware(['auth', 'permission:location,view']);
